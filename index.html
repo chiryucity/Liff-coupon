@@ -27,7 +27,7 @@
     liff.init({ liffId: liffId })
       .then(() => {
         if (!liff.isLoggedIn()) liff.login();
-        else document.getElementById('status').innerText = "LIFF動作確認OK";
+        else document.getElementById('status').innerText = "LIFF動作確認OK1";
       })
       .catch(err => document.getElementById('status').innerText = 'LIFF初期化エラー: ' + err);
 
