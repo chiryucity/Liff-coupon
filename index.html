@@ -27,7 +27,7 @@ const liffId = "2008732357-BnLZycLL";
 liff.init({ liffId: liffId })
 .then(() => {
   if (!liff.isLoggedIn()) liff.login();
-  else document.getElementById('status').innerText = "LIFF動作確認OK3";
+  else document.getElementById('status').innerText = "LIFF動作確認OK";
 })
 .catch(err => document.getElementById('status').innerText = 'LIFF初期化エラー: ' + err);
 
@@ -36,16 +36,16 @@ function addHistory(userId, discount, storeId){
   fetch("https://chiryu.cybozu.com/k/v1/record.json", {
     method: "POST",
     headers: {
-      "X-Cybozu-API-Token": "36ufFgLzmRhFMQGDeJLPlwEKeMhEZ529zVWWWOrz", // 新トークン
+      "X-Cybozu-API-Token": "36ufFgLzmRhFMQGDeJLPlwEKeMhEZ529zVWWWOrz",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
       app: 893,
       record: {
         "Line_user_id": { "value": userId },
-        "discount": { "value": discount },
+        "discount": { "value": parseInt(discount, 10) }, // 整数に変換
         "store_id": { "value": storeId },
-        "used_at": { "value": new Date().toISOString() }
+        "used_at": { "value": new Date().toISOString() } // 日時型（時間まで）
       }
     })
   })
@@ -73,7 +73,7 @@ function updateUserTotal(userId, discount){
   .then(data => {
     if(data.records.length > 0){
       const recordId = data.records[0].$id.value;
-      const total = parseInt(data.records[0].total_used.value || 0) + discount;
+      const total = parseInt(data.records[0].total_used.value || 0, 10) + parseInt(discount, 10);
       fetch("https://chiryu.cybozu.com/k/v1/record.json", {
         method: "PUT",
         headers: {
@@ -93,7 +93,6 @@ function updateUserTotal(userId, discount){
       .then(d => console.log("管理アプリ反映成功:", d))
       .catch(e => console.error("管理アプリ反映エラー:", e));
     } else {
-      // 新規ユーザー登録
       fetch("https://chiryu.cybozu.com/k/v1/record.json", {
         method: "POST",
         headers: {
@@ -104,7 +103,7 @@ function updateUserTotal(userId, discount){
           app: 892,
           record: {
             "Line_user_id": { "value": userId },
-            "total_used": { "value": discount },
+            "total_used": { "value": parseInt(discount, 10) },
             "last_used_at": { "value": new Date().toISOString() }
           }
         })
