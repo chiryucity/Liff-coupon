@@ -27,7 +27,7 @@ const liffId = "2008732357-BnLZycLL";
 liff.init({ liffId: liffId })
 .then(() => {
   if (!liff.isLoggedIn()) liff.login();
-  else document.getElementById('status').innerText = "LIFF動作確認OK";
+  else document.getElementById('status').innerText = "LIFF動作確認OK4";
 })
 .catch(err => document.getElementById('status').innerText = 'LIFF初期化エラー: ' + err);
 
