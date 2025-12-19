@@ -1,115 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <title>クーポン</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>クーポンアプリ</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <h2>クーポン利用</h2>
+  <h1>クーポンアプリ</h1>
 
-  <div id="status">読み込み中...</div>
+  <!-- 割引選択ボタン -->
+  <button id="btn300">300円割引</button>
+  <button id="btn600">600円割引</button>
 
-  <div id="useArea" style="display:none;">
-    利用金額：<input type="number" id="amount"><br><br>
-    割引選択：
-    <button onclick="selectDiscount(300)">300円</button>
-    <button onclick="selectDiscount(600)">600円</button>
-  </div>
+  <p id="status"></p>
 
   <script>
-    const KINTONE_DOMAIN = "https://chiryu.cybozu.com";
-    const APP_HISTORY = 893;
-    const APP_USER = 892;
-
-    const TOKEN_HISTORY = "jhXTFZz026tYU5EDRHEgVIzA48x5wu0OiL2OTkp2";
-    const TOKEN_USER = "RPwvkmAg0VJ3BIa2y6TvwKKTz15dNOWrkSj0ptjr";
-
-    let userId = "";
-    let selectedDiscount = 0;
-    let totalDiscount = 0;
-
-    function selectDiscount(value) {
-      if (totalDiscount + value > 3000) {
-        alert("割引上限に達しています");
-        return;
-      }
-      selectedDiscount = value;
-      registerUse();
-    }
-
-    liff.init({ liffId: "2008732357-BnLZycLL" })
-      .then(() => liff.getProfile())
-      .then(profile => {
-        userId = profile.userId;
-        loadUser();
-      });
-
-    function loadUser() {
-      fetch(`${KINTONE_DOMAIN}/k/v1/records.json?app=${APP_USER}&query=line_user_id="${userId}"`, {
-        headers: { "X-Cybozu-API-Token": TOKEN_USER }
+    // --- ここを自分のLIFF IDに置き換える ---
+    const liffId = "2008732357-BnLZycLL";
+    
+    // LIFF初期化
+    liff.init({ liffId: liffId })
+      .then(() => {
+        document.getElementById('status').innerText = 'LIFF動作確認OK';
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.records.length === 0) {
-          totalDiscount = 0;
-          document.getElementById("useArea").style.display = "block";
-        } else {
-          totalDiscount = Number(data.records[0].total_discount.value);
-          if (totalDiscount >= 3000) {
-            document.getElementById("status").innerText = "割引上限に達しています";
-          } else {
-            document.getElementById("useArea").style.display = "block";
-          }
-        }
-      });
-    }
-
-    function registerUse() {
-      const amount = Number(document.getElementById("amount").value);
-      if (!amount || amount <= 0) {
-        alert("利用金額を入力してください");
-        return;
-      }
-
-      // 履歴登録
-      fetch(`${KINTONE_DOMAIN}/k/v1/record.json`, {
-        method: "POST",
-        headers: {
-          "X-Cybozu-API-Token": TOKEN_HISTORY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          app: APP_HISTORY,
-          record: {
-            use_datetime: { value: new Date().toISOString() },
-            line_user_id: { value: userId },
-            amount: { value: amount },
-            discount: { value: selectedDiscount }
-          }
-        })
+      .catch((err) => {
+        document.getElementById('status').innerText = 'LIFF初期化エラー: ' + err;
       });
 
-      // ユーザー集計更新
-      fetch(`${KINTONE_DOMAIN}/k/v1/record.json`, {
-        method: "POST",
-        headers: {
-          "X-Cybozu-API-Token": TOKEN_USER,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          app: APP_USER,
-          record: {
-            line_user_id: { value: userId },
-            total_discount: { value: totalDiscount + selectedDiscount },
-            last_use: { value: new Date().toISOString() }
-          }
-        })
-      });
+    // 割引ボタンの挙動（例）
+    document.getElementById('btn300').addEventListener('click', () => {
+      alert('300円割引を選択');
+      // kintone API送信などはここで実装
+    });
 
-      alert("クーポン利用完了");
-      liff.closeWindow();
-    }
+    document.getElementById('btn600').addEventListener('click', () => {
+      alert('600円割引を選択');
+      // kintone API送信などはここで実装
+    });
   </script>
 </body>
 </html>
