@@ -27,7 +27,7 @@
     liff.init({ liffId: liffId })
       .then(() => {
         if (!liff.isLoggedIn()) liff.login();
-        else document.getElementById('status').innerText = "LIFF動作確認OK1";
+        else document.getElementById('status').innerText = "LIFF動作確認OK2";
       })
       .catch(err => document.getElementById('status').innerText = 'LIFF初期化エラー: ' + err);
 
@@ -36,7 +36,7 @@
       fetch("https://chiryu.cybozu.com/k/v1/record.json", {
         method: "POST",
         headers: {
-          "X-Cybozu-API-Token": "jhXTFZz026tYU5EDRHEgVIzA48x5wu0OiL2OTkp2", // 履歴アプリトークン
+          "X-Cybozu-API-Token": "36ufFgLzmRhFMQGDeJLPlwEKeMhEZ529zVWWWOrz", // 新トークン
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -57,17 +57,17 @@
         updateUserTotal(userId, discount);
       })
       .catch(err => {
-  console.error("履歴反映エラー詳細:", err);
-  document.getElementById('status').innerText = "履歴反映エラー: " + JSON.stringify(err);
-  alert("履歴反映エラーが発生しました。管理者に確認してください。");
-});
+        console.error("履歴反映エラー詳細:", err);
+        document.getElementById('status').innerText = "履歴反映エラー: " + JSON.stringify(err);
+        alert("履歴反映エラー。管理者に確認してください");
+      });
     }
 
     // 管理アプリ(892)に累積反映
     function updateUserTotal(userId, discount){
       fetch(`https://chiryu.cybozu.com/k/v1/records.json?app=892&query=Line_user_id="${userId}"`, {
         headers: {
-          "X-Cybozu-API-Token": "RPwvkmAg0VJ3BIa2y6TvwKKTz15dNOWrkSj0ptjr"
+          "X-Cybozu-API-Token": "Mn5EuAckZQzVhoRz8S1ultnI8xMHufw3kjbOIfnl"
         }
       })
       .then(res => res.json())
@@ -78,7 +78,7 @@
           fetch("https://chiryu.cybozu.com/k/v1/record.json", {
             method: "PUT",
             headers: {
-              "X-Cybozu-API-Token": "RPwvkmAg0VJ3BIa2y6TvwKKTz15dNOWrkSj0ptjr",
+              "X-Cybozu-API-Token": "Mn5EuAckZQzVhoRz8S1ultnI8xMHufw3kjbOIfnl",
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
@@ -98,7 +98,7 @@
           fetch("https://chiryu.cybozu.com/k/v1/record.json", {
             method: "POST",
             headers: {
-              "X-Cybozu-API-Token": "RPwvkmAg0VJ3BIa2y6TvwKKTz15dNOWrkSj0ptjr",
+              "X-Cybozu-API-Token": "Mn5EuAckZQzVhoRz8S1ultnI8xMHufw3kjbOIfnl",
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
