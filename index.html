@@ -27,11 +27,11 @@
     liff.init({ liffId: liffId })
       .then(() => {
         if (!liff.isLoggedIn()) liff.login();
-        else document.getElementById('status').innerText = "LIFF動作確認OK2";
+        else document.getElementById('status').innerText = "LIFF動作確認OK";
       })
       .catch(err => document.getElementById('status').innerText = 'LIFF初期化エラー: ' + err);
 
-    // kintone 履歴アプリ登録（893）
+    // 履歴アプリ(893)に登録
     function addHistory(userId, discount, storeId){
       fetch("https://chiryu.cybozu.com/k/v1/record.json", {
         method: "POST",
@@ -45,7 +45,8 @@
             "Line_user_id": { "value": userId },
             "discount": { "value": discount },
             "store_id": { "value": storeId },
-            "used_at": { "value": new Date().toISOString() }
+            "used_at": { "value": new Date().toISOString() },
+            "store_confirm": { "value": "確認済" } // 必須ラジオボタン
           }
         })
       })
@@ -53,19 +54,17 @@
       .then(data => {
         console.log("履歴反映成功:", data);
         document.getElementById('status').innerText = `クーポン ${discount}円を履歴に反映`;
-        // 累積反映も同時に
         updateUserTotal(userId, discount);
       })
       .catch(err => {
-        console.error("履歴反映エラー:", err);
+        console.error("履歴反映エラー詳細:", err);
         document.getElementById('status').innerText = "履歴反映エラー";
         alert("履歴反映エラー。管理者に確認してください");
       });
     }
 
-    // kintone 管理アプリ更新（892）
+    // 管理アプリ(892)に累積反映
     function updateUserTotal(userId, discount){
-      // まず既存ユーザーを取得
       fetch(`https://chiryu.cybozu.com/k/v1/records.json?app=892&query=Line_user_id="${userId}"`, {
         headers: {
           "X-Cybozu-API-Token": "RPwvkmAg0VJ3BIa2y6TvwKKTz15dNOWrkSj0ptjr"
@@ -95,7 +94,7 @@
           .then(d => console.log("管理アプリ反映成功:", d))
           .catch(e => console.error("管理アプリ反映エラー:", e));
         } else {
-          // 新規ユーザーの場合
+          // 新規ユーザー登録
           fetch("https://chiryu.cybozu.com/k/v1/record.json", {
             method: "POST",
             headers: {
@@ -112,14 +111,14 @@
             })
           })
           .then(res => res.json())
-          .then(d => console.log("管理アプリ新規ユーザー登録成功:", d))
+          .then(d => console.log("管理アプリ新規登録成功:", d))
           .catch(e => console.error("管理アプリ新規登録エラー:", e));
         }
       })
       .catch(err => console.error("管理アプリ取得エラー:", err));
     }
 
-    // ボタン処理
+    // ボタン設定
     function setupButton(btnId, discount){
       document.getElementById(btnId).addEventListener('click', () => {
         liff.getProfile()
