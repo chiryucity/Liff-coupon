@@ -6,14 +6,14 @@
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-<h1>クーポン利用</h1>
+<h1>クーポン1利用</h1>
 <button id="btn300">300円割引</button>
 <button id="btn600">600円割引</button>
 
 <script>
-const LIFF_ID = "2008732357-BnLZycLL"; // あなたのLIFF ID
-const KINTONE_TOKEN = "36ufFgLzmRhFMQGDeJLPlwEKeMhEZ529zVWWWOrz"; // 履歴アプリ893用APIトークン
-const APP_ID = 893; // 履歴アプリID
+const LIFF_ID = "2008732357-BnLZycLL"; 
+const KINTONE_TOKEN = "36ufFgLzmRhFMQGDeJLPlwEKeMhEZ529zVWWWOrz"; 
+const APP_ID = 893;
 
 async function addHistory(lineUserId, discount, storeId) {
   try {
