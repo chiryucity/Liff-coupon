@@ -2,19 +2,114 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>LIFFテスト</title>
+  <title>クーポン</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <h1>LIFF 動作確認</h1>
-  <p id="user"></p>
+  <h2>クーポン利用</h2>
+
+  <div id="status">読み込み中...</div>
+
+  <div id="useArea" style="display:none;">
+    利用金額：<input type="number" id="amount"><br><br>
+    割引選択：
+    <button onclick="selectDiscount(300)">300円</button>
+    <button onclick="selectDiscount(600)">600円</button>
+  </div>
 
   <script>
+    const KINTONE_DOMAIN = "https://chiryu.cybozu.com";
+    const APP_HISTORY = 893;
+    const APP_USER = 892;
+
+    const TOKEN_HISTORY = "jhXTFZz026tYU5EDRHEgVIzA48x5wu0OiL2OTkp2";
+    const TOKEN_USER = "RPwvkmAg0VJ3BIa2y6TvwKKTz15dNOWrkSj0ptjr";
+
+    let userId = "";
+    let selectedDiscount = 0;
+    let totalDiscount = 0;
+
+    function selectDiscount(value) {
+      if (totalDiscount + value > 3000) {
+        alert("割引上限に達しています");
+        return;
+      }
+      selectedDiscount = value;
+      registerUse();
+    }
+
     liff.init({ liffId: "2008732357-BnLZycLL" })
-      .then(() => {
-        document.getElementById("user").innerText =
-          "ユーザーID: " + liff.getDecodedIDToken().sub;
+      .then(() => liff.getProfile())
+      .then(profile => {
+        userId = profile.userId;
+        loadUser();
       });
+
+    function loadUser() {
+      fetch(`${KINTONE_DOMAIN}/k/v1/records.json?app=${APP_USER}&query=line_user_id="${userId}"`, {
+        headers: { "X-Cybozu-API-Token": TOKEN_USER }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.records.length === 0) {
+          totalDiscount = 0;
+          document.getElementById("useArea").style.display = "block";
+        } else {
+          totalDiscount = Number(data.records[0].total_discount.value);
+          if (totalDiscount >= 3000) {
+            document.getElementById("status").innerText = "割引上限に達しています";
+          } else {
+            document.getElementById("useArea").style.display = "block";
+          }
+        }
+      });
+    }
+
+    function registerUse() {
+      const amount = Number(document.getElementById("amount").value);
+      if (!amount || amount <= 0) {
+        alert("利用金額を入力してください");
+        return;
+      }
+
+      // 履歴登録
+      fetch(`${KINTONE_DOMAIN}/k/v1/record.json`, {
+        method: "POST",
+        headers: {
+          "X-Cybozu-API-Token": TOKEN_HISTORY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          app: APP_HISTORY,
+          record: {
+            use_datetime: { value: new Date().toISOString() },
+            line_user_id: { value: userId },
+            amount: { value: amount },
+            discount: { value: selectedDiscount }
+          }
+        })
+      });
+
+      // ユーザー集計更新
+      fetch(`${KINTONE_DOMAIN}/k/v1/record.json`, {
+        method: "POST",
+        headers: {
+          "X-Cybozu-API-Token": TOKEN_USER,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          app: APP_USER,
+          record: {
+            line_user_id: { value: userId },
+            total_discount: { value: totalDiscount + selectedDiscount },
+            last_use: { value: new Date().toISOString() }
+          }
+        })
+      });
+
+      alert("クーポン利用完了");
+      liff.closeWindow();
+    }
   </script>
 </body>
 </html>
