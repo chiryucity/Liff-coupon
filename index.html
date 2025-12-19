@@ -14,19 +14,8 @@
       margin: 0;
       padding: 20px;
     }
-
-    h1 {
-      font-size: 28px;
-      color: #333;
-      margin-bottom: 30px;
-    }
-
-    p#status {
-      font-size: 16px;
-      color: #555;
-      margin-bottom: 20px;
-    }
-
+    h1 { font-size: 28px; color: #333; margin-bottom: 30px; }
+    p#status { font-size: 16px; color: #555; margin-bottom: 20px; }
     button {
       font-size: 22px;
       padding: 15px 40px;
@@ -38,34 +27,27 @@
       cursor: pointer;
       transition: background-color 0.2s;
     }
-
-    button:hover {
-      background-color: #009900;
-    }
-
-    @media (max-width: 400px) {
-      button {
-        font-size: 20px;
-        padding: 12px 30px;
-      }
-    }
+    button:hover { background-color: #009900; }
+    @media (max-width: 400px) { button { font-size: 20px; padding: 12px 30px; } }
   </style>
 </head>
 <body>
   <h1>クーポンアプリ</h1>
-
   <p id="status">読み込み中...</p>
-
   <button id="btn300">300円割引</button>
   <button id="btn600">600円割引</button>
 
   <script>
-    const liffId = "2008732357-BnLZycLL"; // あなたのLIFF ID
+    const liffId = "2008732357-BnLZycLL";
 
-    // LIFF初期化
+    // LIFF初期化＋ログイン処理
     liff.init({ liffId: liffId })
       .then(() => {
-        document.getElementById('status').innerText = 'LIFF動作確認OK';
+        if (!liff.isLoggedIn()) {
+          liff.login(); // ログインしていない場合はログイン画面へ
+        } else {
+          document.getElementById('status').innerText = "LIFF動作確認OK1";
+        }
       })
       .catch(err => {
         document.getElementById('status').innerText = 'LIFF初期化エラー: ' + err;
@@ -73,7 +55,7 @@
 
     // kintone 連携関数
     function sendToKintone(userId, discount, storeId) {
-      const appId = 893; // 履歴アプリ
+      const appId = 893;
       const apiToken = "jhXTFZz026tYU5EDRHEgVIzA48x5wu0OiL2OTkp2";
 
       const record = {
@@ -96,7 +78,6 @@
         console.log("kintone履歴反映成功:", data);
         document.getElementById('status').innerText = `クーポン ${discount}円が履歴に反映されました`;
         alert(`クーポン ${discount}円が履歴に反映されました`);
-        // 後で管理アプリ（892）に累積更新を追加可能
       })
       .catch(err => {
         console.error("kintone反映エラー:", err);
@@ -115,11 +96,7 @@
           console.log("ユーザーID:", profile.userId);
           document.getElementById('status').innerText = "ユーザーID取得: " + profile.userId;
 
-          console.log("kintoneに送信するデータ:", {
-            userId: profile.userId,
-            discount: 300,
-            storeId: "店舗A"
-          });
+          console.log("kintoneに送信するデータ:", { userId: profile.userId, discount: 300, storeId: "店舗A" });
 
           sendToKintone(profile.userId, 300, "店舗A");
         })
@@ -138,11 +115,7 @@
           console.log("ユーザーID:", profile.userId);
           document.getElementById('status').innerText = "ユーザーID取得: " + profile.userId;
 
-          console.log("kintoneに送信するデータ:", {
-            userId: profile.userId,
-            discount: 600,
-            storeId: "店舗A"
-          });
+          console.log("kintoneに送信するデータ:", { userId: profile.userId, discount: 600, storeId: "店舗A" });
 
           sendToKintone(profile.userId, 600, "店舗A");
         })
