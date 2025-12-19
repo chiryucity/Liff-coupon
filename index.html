@@ -1,30 +1,11 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<title>LIFFクーポン</title>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-</head>
-<body>
-<h1>クーポン1利用</h1>
-<button id="btn300">300円割引</button>
-<button id="btn600">600円割引</button>
-
 <script>
-const LIFF_ID = "2008732357-BnLZycLL"; 
-const KINTONE_TOKEN = "36ufFgLzmRhFMQGDeJLPlwEKeMhEZ529zVWWWOrz"; 
-const APP_ID = 893;
-
 async function addHistory(lineUserId, discount, storeId) {
   try {
-    const res = await fetch("https://chiryu.cybozu.com/k/v1/record.json", {
+    const res = await fetch("https://liff-coupon.vercel.app/api/addHistory", {
       method: "POST",
-      headers: {
-        "X-Cybozu-API-Token": KINTONE_TOKEN,
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        app: APP_ID,
+        app: 893,
         record: {
           "Line_user_id": { "value": lineUserId },
           "discount": { "value": discount },
@@ -33,6 +14,7 @@ async function addHistory(lineUserId, discount, storeId) {
         }
       })
     });
+
     const data = await res.json();
     console.log("履歴追加結果:", data);
     alert(`クーポン${discount}円を利用しました！`);
@@ -41,30 +23,4 @@ async function addHistory(lineUserId, discount, storeId) {
     alert("履歴反映に失敗しました。管理者に確認してください。");
   }
 }
-
-async function init() {
-  try {
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isLoggedIn()) liff.login();
-
-    const profile = await liff.getProfile();
-    const userId = profile.userId;
-    console.log("取得したLINEユーザーID:", userId);
-
-    document.getElementById("btn300").addEventListener("click", async () => {
-      await addHistory(userId, 300, "店舗A");
-    });
-    document.getElementById("btn600").addEventListener("click", async () => {
-      await addHistory(userId, 600, "店舗A");
-    });
-
-  } catch (err) {
-    console.error("LIFF初期化エラー:", err);
-    alert("LIFFの初期化に失敗しました。");
-  }
-}
-
-init();
 </script>
-</body>
-</html>
