@@ -1,137 +1,137 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>クーポンアプリ</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; font-size: 18px; text-align: center; margin:0; padding:20px; background:#f9f9f9; }
-    h1 { font-size:28px; color:#333; margin-bottom:30px; }
-    p#status { font-size:16px; color:#555; margin-bottom:20px; }
-    button { font-size:22px; padding:15px 40px; margin:10px; border:none; border-radius:10px; background:#00c300; color:white; cursor:pointer; transition:0.2s; }
-    button:hover { background:#009900; }
-    @media (max-width:400px){button{font-size:20px;padding:12px 30px;}}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>クーポンアプリ</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; font-size:18px; text-align:center; margin:0; padding:20px; background:#f9f9f9; }
+  h1 { font-size:28px; color:#333; margin-bottom:30px; }
+  p#status { font-size:16px; color:#555; margin-bottom:20px; }
+  button { font-size:22px; padding:15px 40px; margin:10px; border:none; border-radius:10px; background:#00c300; color:white; cursor:pointer; transition:0.2s; }
+  button:hover { background:#009900; }
+  @media (max-width:400px){button{font-size:20px;padding:12px 30px;}}
+</style>
 </head>
 <body>
-  <h1>クーポンアプリ</h1>
-  <p id="status">読み込み中...</p>
-  <button id="btn300">300円割引</button>
-  <button id="btn600">600円割引</button>
+<h1>クーポンアプリ</h1>
+<p id="status">読み込み中...</p>
+<button id="btn300">300円割引</button>
+<button id="btn600">600円割引</button>
 
-  <script>
-    const liffId = "2008732357-BnLZycLL";
+<script>
+const liffId = "2008732357-BnLZycLL";
 
-    // LIFF 初期化＋ログイン
-    liff.init({ liffId: liffId })
-      .then(() => {
-        if (!liff.isLoggedIn()) liff.login();
-        else document.getElementById('status').innerText = "LIFF動作確認OK2";
-      })
-      .catch(err => document.getElementById('status').innerText = 'LIFF初期化エラー: ' + err);
+// LIFF 初期化
+liff.init({ liffId: liffId })
+.then(() => {
+  if (!liff.isLoggedIn()) liff.login();
+  else document.getElementById('status').innerText = "LIFF動作確認OK";
+})
+.catch(err => document.getElementById('status').innerText = 'LIFF初期化エラー: ' + err);
 
-    // 履歴アプリ(893)に登録
-    function addHistory(userId, discount, storeId){
+// 履歴アプリ(893)に登録
+function addHistory(userId, discount, storeId){
+  fetch("https://chiryu.cybozu.com/k/v1/record.json", {
+    method: "POST",
+    headers: {
+      "X-Cybozu-API-Token": "36ufFgLzmRhFMQGDeJLPlwEKeMhEZ529zVWWWOrz", // 新トークン
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      app: 893,
+      record: {
+        "Line_user_id": { "value": userId },
+        "discount": { "value": discount },
+        "store_id": { "value": storeId },
+        "used_at": { "value": new Date().toISOString() }
+      }
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    console.log("履歴反映成功:", data);
+    document.getElementById('status').innerText = `クーポン ${discount}円を履歴に反映`;
+    updateUserTotal(userId, discount);
+  })
+  .catch(err => {
+    console.error("履歴反映エラー詳細:", err);
+    document.getElementById('status').innerText = "履歴反映エラー: " + JSON.stringify(err);
+    alert("履歴反映エラー。管理者に確認してください");
+  });
+}
+
+// 管理アプリ(892)に累積反映
+function updateUserTotal(userId, discount){
+  fetch(`https://chiryu.cybozu.com/k/v1/records.json?app=892&query=Line_user_id="${userId}"`, {
+    headers: {
+      "X-Cybozu-API-Token": "Mn5EuAckZQzVhoRz8S1ultnI8xMHufw3kjbOIfnl"
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.records.length > 0){
+      const recordId = data.records[0].$id.value;
+      const total = parseInt(data.records[0].total_used.value || 0) + discount;
       fetch("https://chiryu.cybozu.com/k/v1/record.json", {
-        method: "POST",
+        method: "PUT",
         headers: {
-          "X-Cybozu-API-Token": "36ufFgLzmRhFMQGDeJLPlwEKeMhEZ529zVWWWOrz", // 新トークン
+          "X-Cybozu-API-Token": "Mn5EuAckZQzVhoRz8S1ultnI8xMHufw3kjbOIfnl",
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          app: 893,
+          app: 892,
+          id: recordId,
           record: {
-            "Line_user_id": { "value": userId },
-            "discount": { "value": discount },
-            "store_id": { "value": storeId },
-            "used_at": { "value": new Date().toISOString() },
-            "store_confirm": { "value": "確認済" } // 必須ラジオボタン
+            total_used: { "value": total },
+            last_used_at: { "value": new Date().toISOString() }
           }
         })
       })
       .then(res => res.json())
-      .then(data => {
-        console.log("履歴反映成功:", data);
-        document.getElementById('status').innerText = `クーポン ${discount}円を履歴に反映`;
-        updateUserTotal(userId, discount);
-      })
-      .catch(err => {
-        console.error("履歴反映エラー詳細:", err);
-        document.getElementById('status').innerText = "履歴反映エラー: " + JSON.stringify(err);
-        alert("履歴反映エラー。管理者に確認してください");
-      });
-    }
-
-    // 管理アプリ(892)に累積反映
-    function updateUserTotal(userId, discount){
-      fetch(`https://chiryu.cybozu.com/k/v1/records.json?app=892&query=Line_user_id="${userId}"`, {
+      .then(d => console.log("管理アプリ反映成功:", d))
+      .catch(e => console.error("管理アプリ反映エラー:", e));
+    } else {
+      // 新規ユーザー登録
+      fetch("https://chiryu.cybozu.com/k/v1/record.json", {
+        method: "POST",
         headers: {
-          "X-Cybozu-API-Token": "Mn5EuAckZQzVhoRz8S1ultnI8xMHufw3kjbOIfnl"
-        }
+          "X-Cybozu-API-Token": "Mn5EuAckZQzVhoRz8S1ultnI8xMHufw3kjbOIfnl",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          app: 892,
+          record: {
+            "Line_user_id": { "value": userId },
+            "total_used": { "value": discount },
+            "last_used_at": { "value": new Date().toISOString() }
+          }
+        })
       })
       .then(res => res.json())
-      .then(data => {
-        if(data.records.length > 0){
-          const recordId = data.records[0].$id.value;
-          const total = parseInt(data.records[0].total_used.value || 0) + discount;
-          fetch("https://chiryu.cybozu.com/k/v1/record.json", {
-            method: "PUT",
-            headers: {
-              "X-Cybozu-API-Token": "Mn5EuAckZQzVhoRz8S1ultnI8xMHufw3kjbOIfnl",
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              app: 892,
-              id: recordId,
-              record: {
-                total_used: { "value": total },
-                last_used_at: { "value": new Date().toISOString() }
-              }
-            })
-          })
-          .then(res => res.json())
-          .then(d => console.log("管理アプリ反映成功:", d))
-          .catch(e => console.error("管理アプリ反映エラー:", e));
-        } else {
-          // 新規ユーザー登録
-          fetch("https://chiryu.cybozu.com/k/v1/record.json", {
-            method: "POST",
-            headers: {
-              "X-Cybozu-API-Token": "Mn5EuAckZQzVhoRz8S1ultnI8xMHufw3kjbOIfnl",
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              app: 892,
-              record: {
-                "Line_user_id": { "value": userId },
-                "total_used": { "value": discount },
-                "last_used_at": { "value": new Date().toISOString() }
-              }
-            })
-          })
-          .then(res => res.json())
-          .then(d => console.log("管理アプリ新規登録成功:", d))
-          .catch(e => console.error("管理アプリ新規登録エラー:", e));
-        }
-      })
-      .catch(err => console.error("管理アプリ取得エラー:", err));
+      .then(d => console.log("管理アプリ新規登録成功:", d))
+      .catch(e => console.error("管理アプリ新規登録エラー:", e));
     }
+  })
+  .catch(err => console.error("管理アプリ取得エラー:", err));
+}
 
-    // ボタン設定
-    function setupButton(btnId, discount){
-      document.getElementById(btnId).addEventListener('click', () => {
-        liff.getProfile()
-          .then(profile => addHistory(profile.userId, discount, "店舗A"))
-          .catch(err => {
-            console.error("ユーザーID取得失敗:", err);
-            document.getElementById('status').innerText = "ユーザーID取得失敗";
-          });
+// ボタン設定
+function setupButton(btnId, discount){
+  document.getElementById(btnId).addEventListener('click', () => {
+    liff.getProfile()
+      .then(profile => addHistory(profile.userId, discount, "店舗A"))
+      .catch(err => {
+        console.error("ユーザーID取得失敗:", err);
+        document.getElementById('status').innerText = "ユーザーID取得失敗";
       });
-    }
+  });
+}
 
-    setupButton('btn300', 300);
-    setupButton('btn600', 600);
-  </script>
+setupButton('btn300', 300);
+setupButton('btn600', 600);
+
+</script>
 </body>
 </html>
