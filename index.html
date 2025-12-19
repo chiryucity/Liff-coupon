@@ -57,10 +57,10 @@
         updateUserTotal(userId, discount);
       })
       .catch(err => {
-        console.error("履歴反映エラー詳細:", err);
-        document.getElementById('status').innerText = "履歴反映エラー";
-        alert("履歴反映エラー。管理者に確認してください");
-      });
+  console.error("履歴反映エラー詳細:", err);
+  document.getElementById('status').innerText = "履歴反映エラー: " + JSON.stringify(err);
+  alert("履歴反映エラーが発生しました。管理者に確認してください。");
+});
     }
 
     // 管理アプリ(892)に累積反映
