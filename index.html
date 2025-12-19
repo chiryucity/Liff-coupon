@@ -6,29 +6,12 @@
   <title>クーポンアプリ</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body {
-      font-family: "Helvetica Neue", Arial, sans-serif;
-      font-size: 18px;
-      text-align: center;
-      background-color: #f9f9f9;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 { font-size: 28px; color: #333; margin-bottom: 30px; }
-    p#status { font-size: 16px; color: #555; margin-bottom: 20px; }
-    button {
-      font-size: 22px;
-      padding: 15px 40px;
-      margin: 10px;
-      border: none;
-      border-radius: 10px;
-      background-color: #00c300;
-      color: white;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    button:hover { background-color: #009900; }
-    @media (max-width: 400px) { button { font-size: 20px; padding: 12px 30px; } }
+    body { font-family: Arial, sans-serif; font-size: 18px; text-align: center; margin:0; padding:20px; background:#f9f9f9; }
+    h1 { font-size:28px; color:#333; margin-bottom:30px; }
+    p#status { font-size:16px; color:#555; margin-bottom:20px; }
+    button { font-size:22px; padding:15px 40px; margin:10px; border:none; border-radius:10px; background:#00c300; color:white; cursor:pointer; transition:0.2s; }
+    button:hover { background:#009900; }
+    @media (max-width:400px){button{font-size:20px;padding:12px 30px;}}
   </style>
 </head>
 <body>
@@ -40,90 +23,116 @@
   <script>
     const liffId = "2008732357-BnLZycLL";
 
-    // LIFF初期化＋ログイン処理
+    // LIFF 初期化＋ログイン
     liff.init({ liffId: liffId })
       .then(() => {
-        if (!liff.isLoggedIn()) {
-          liff.login(); // ログインしていない場合はログイン画面へ
-        } else {
-          document.getElementById('status').innerText = "LIFF動作確認OK1";
-        }
+        if (!liff.isLoggedIn()) liff.login();
+        else document.getElementById('status').innerText = "LIFF動作確認OK2";
       })
-      .catch(err => {
-        document.getElementById('status').innerText = 'LIFF初期化エラー: ' + err;
-      });
+      .catch(err => document.getElementById('status').innerText = 'LIFF初期化エラー: ' + err);
 
-    // kintone 連携関数
-    function sendToKintone(userId, discount, storeId) {
-      const appId = 893;
-      const apiToken = "jhXTFZz026tYU5EDRHEgVIzA48x5wu0OiL2OTkp2";
-
-      const record = {
-        "ユーザーID": { "value": userId },
-        "割引額": { "value": discount },
-        "店舗ID": { "value": storeId },
-        "利用日時": { "value": new Date().toISOString() }
-      };
-
-      fetch(`https://chiryu.cybozu.com/k/v1/record.json`, {
+    // kintone 履歴アプリ登録（893）
+    function addHistory(userId, discount, storeId){
+      fetch("https://chiryu.cybozu.com/k/v1/record.json", {
         method: "POST",
         headers: {
-          "X-Cybozu-API-Token": apiToken,
+          "X-Cybozu-API-Token": "jhXTFZz026tYU5EDRHEgVIzA48x5wu0OiL2OTkp2", // 履歴アプリトークン
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ app: appId, record: record })
+        body: JSON.stringify({
+          app: 893,
+          record: {
+            "Line_user_id": { "value": userId },
+            "discount": { "value": discount },
+            "store_id": { "value": storeId },
+            "used_at": { "value": new Date().toISOString() }
+          }
+        })
       })
-      .then(response => response.json())
+      .then(res => res.json())
       .then(data => {
-        console.log("kintone履歴反映成功:", data);
-        document.getElementById('status').innerText = `クーポン ${discount}円が履歴に反映されました`;
-        alert(`クーポン ${discount}円が履歴に反映されました`);
+        console.log("履歴反映成功:", data);
+        document.getElementById('status').innerText = `クーポン ${discount}円を履歴に反映`;
+        // 累積反映も同時に
+        updateUserTotal(userId, discount);
       })
       .catch(err => {
-        console.error("kintone反映エラー:", err);
-        document.getElementById('status').innerText = "kintone反映エラー";
-        alert("kintone反映エラー。管理者に確認してください");
+        console.error("履歴反映エラー:", err);
+        document.getElementById('status').innerText = "履歴反映エラー";
+        alert("履歴反映エラー。管理者に確認してください");
       });
     }
 
-    // デバッグ用ボタン押下処理
-    document.getElementById('btn300').addEventListener('click', () => {
-      console.log("300円ボタン押下");
-      document.getElementById('status').innerText = "300円ボタン押下";
+    // kintone 管理アプリ更新（892）
+    function updateUserTotal(userId, discount){
+      // まず既存ユーザーを取得
+      fetch(`https://chiryu.cybozu.com/k/v1/records.json?app=892&query=Line_user_id="${userId}"`, {
+        headers: {
+          "X-Cybozu-API-Token": "RPwvkmAg0VJ3BIa2y6TvwKKTz15dNOWrkSj0ptjr"
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.records.length > 0){
+          const recordId = data.records[0].$id.value;
+          const total = parseInt(data.records[0].total_used.value || 0) + discount;
+          fetch("https://chiryu.cybozu.com/k/v1/record.json", {
+            method: "PUT",
+            headers: {
+              "X-Cybozu-API-Token": "RPwvkmAg0VJ3BIa2y6TvwKKTz15dNOWrkSj0ptjr",
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              app: 892,
+              id: recordId,
+              record: {
+                total_used: { "value": total },
+                last_used_at: { "value": new Date().toISOString() }
+              }
+            })
+          })
+          .then(res => res.json())
+          .then(d => console.log("管理アプリ反映成功:", d))
+          .catch(e => console.error("管理アプリ反映エラー:", e));
+        } else {
+          // 新規ユーザーの場合
+          fetch("https://chiryu.cybozu.com/k/v1/record.json", {
+            method: "POST",
+            headers: {
+              "X-Cybozu-API-Token": "RPwvkmAg0VJ3BIa2y6TvwKKTz15dNOWrkSj0ptjr",
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              app: 892,
+              record: {
+                "Line_user_id": { "value": userId },
+                "total_used": { "value": discount },
+                "last_used_at": { "value": new Date().toISOString() }
+              }
+            })
+          })
+          .then(res => res.json())
+          .then(d => console.log("管理アプリ新規ユーザー登録成功:", d))
+          .catch(e => console.error("管理アプリ新規登録エラー:", e));
+        }
+      })
+      .catch(err => console.error("管理アプリ取得エラー:", err));
+    }
 
-      liff.getProfile()
-        .then(profile => {
-          console.log("ユーザーID:", profile.userId);
-          document.getElementById('status').innerText = "ユーザーID取得: " + profile.userId;
+    // ボタン処理
+    function setupButton(btnId, discount){
+      document.getElementById(btnId).addEventListener('click', () => {
+        liff.getProfile()
+          .then(profile => addHistory(profile.userId, discount, "店舗A"))
+          .catch(err => {
+            console.error("ユーザーID取得失敗:", err);
+            document.getElementById('status').innerText = "ユーザーID取得失敗";
+          });
+      });
+    }
 
-          console.log("kintoneに送信するデータ:", { userId: profile.userId, discount: 300, storeId: "店舗A" });
-
-          sendToKintone(profile.userId, 300, "店舗A");
-        })
-        .catch(err => {
-          console.error("LIFFでユーザーID取得失敗:", err);
-          document.getElementById('status').innerText = "ユーザーID取得失敗: " + err;
-        });
-    });
-
-    document.getElementById('btn600').addEventListener('click', () => {
-      console.log("600円ボタン押下");
-      document.getElementById('status').innerText = "600円ボタン押下";
-
-      liff.getProfile()
-        .then(profile => {
-          console.log("ユーザーID:", profile.userId);
-          document.getElementById('status').innerText = "ユーザーID取得: " + profile.userId;
-
-          console.log("kintoneに送信するデータ:", { userId: profile.userId, discount: 600, storeId: "店舗A" });
-
-          sendToKintone(profile.userId, 600, "店舗A");
-        })
-        .catch(err => {
-          console.error("LIFFでユーザーID取得失敗:", err);
-          document.getElementById('status').innerText = "ユーザーID取得失敗: " + err;
-        });
-    });
+    setupButton('btn300', 300);
+    setupButton('btn600', 600);
   </script>
 </body>
 </html>
